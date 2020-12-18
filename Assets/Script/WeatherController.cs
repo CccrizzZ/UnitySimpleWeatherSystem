@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -69,33 +70,26 @@ public class WeatherController : MonoBehaviour
             if (RandWeather)
             {
 
-                x = Random.Range(1,100);
+                x = UnityEngine.Random.Range(1,100);
                 Debug.Log(x);
 
-                if (x < ThunderStormPossibility)
-                {
-                    Debug.Log("ThunderStorm");
-                    ThunderStorm();
-                }
-                else if ( x < RainPossibility)
-                {
-                    Debug.Log("Rain");
-                    Rain();
-                }
-                else if (x < OverCastPossibility)
+                if (x < OverCastPossibility)
                 {
                     Debug.Log("Overcast");
                     OverCast();
                     
                 }
-
             }
-        
-        
-        
         }
     }
 
+    IEnumerator ChangeColor(Color TargetColor)
+    {
+
+        yield return null;
+
+        globalLight.color = Color.Lerp(globalLight.color, TargetColor, 1.0f);
+    }
 
 
     void OverCast()
@@ -107,30 +101,38 @@ public class WeatherController : MonoBehaviour
         StartCoroutine(FadeOut(SoundArray[0]));
         RandWeather = false;
 
-        while (globalLight.intensity > 0.8f)
-        {
-            globalLight.intensity -= Time.deltaTime * 0.0001f;
-        }
+        // while (globalLight.intensity > 0.8f)
+        // {
+        //     globalLight.intensity -= 0.0001f;
+        // }
 
-        globalLight.color = Color.Lerp(globalLight.color, new Color(0.9f, 0.9f, 1.0f, 1.0f), 1);
+        // globalLight.intensity = Mathf.Lerp(globalLight.intensity, 0.8f, 5.0f);
+        // myLerp(50.0f, 0.8f);
+        
 
+        // globalLight.color = Color.Lerp(globalLight.color, new Color(0.84f, 0.62f, 1.0f, 1.0f), 5);
+        StartCoroutine(ChangeColor(new Color(0.84f, 0.62f, 1.0f, 1.0f)));
 
 
         yield return new WaitForSeconds(10);
 
 
-        while (globalLight.intensity <= 0.5f)
-        {
-            globalLight.intensity += Time.deltaTime * 0.0001f;
-        }
+        // globalLight.intensity = Mathf.Lerp(globalLight.intensity, 0.8f, 5.0f);
 
-        if(Random.Range(1,100)>50)
+
+        // while (globalLight.intensity <= 0.5f)
+        // {
+        //     globalLight.intensity += 0.0001f;
+        // }
+
+        if(UnityEngine.Random.Range(1,100)>RainPossibility)
         {
             Rain();
         }
         else
         {
-            globalLight.color = Color.Lerp(globalLight.color, startColor, 2);
+            StartCoroutine(ChangeColor(startColor));
+            // globalLight.color = Color.Lerp(globalLight.color, startColor, 1.0f);
             
             RandWeather = true;
             StartCoroutine(FadeIn(SoundArray[0]));
@@ -156,8 +158,10 @@ public class WeatherController : MonoBehaviour
         {
             globalLight.intensity -= Time.deltaTime * 0.0001f;
         }
-        globalLight.color = Color.Lerp(globalLight.color, new Color(0.84f, 0.62f, 1.0f, 1.0f), 5);
-       
+
+
+        StartCoroutine(ChangeColor(new Color(0.84f, 0.62f, 1.0f, 1.0f)));
+
         var temp = Instantiate(rain);
         StartCoroutine(FadeIn(SoundArray[1]));
 
@@ -166,7 +170,6 @@ public class WeatherController : MonoBehaviour
         
 
         
-        StartCoroutine(FadeOut(SoundArray[1]));
         // globalLight.color = startColor;
 
 
@@ -177,14 +180,15 @@ public class WeatherController : MonoBehaviour
 
         Destroy(temp);
         
-        if(Random.Range(1,100)>50)
+        if(UnityEngine.Random.Range(1,100)>ThunderStormPossibility)
         {
             ThunderStorm();
         }
         else{
-            globalLight.color = Color.Lerp(globalLight.color, startColor, 5);
-            RandWeather = true;
+            StartCoroutine(FadeOut(SoundArray[1]));
+            StartCoroutine(ChangeColor(startColor));
             StartCoroutine(FadeIn(SoundArray[0]));
+            RandWeather = true;
         }
 
         
@@ -201,27 +205,37 @@ public class WeatherController : MonoBehaviour
     {
         for (var i = 0; i < 4; i++)
         {
-            yield return new WaitForSeconds(randInterval);
-            var pos = new Vector2(Random.Range(-10,10), Random.Range(-10,10));
-            thunder.transform.position = pos;
-            var temp = Instantiate(thunder);
-            StartCoroutine(PlayThunderSound());
-            yield return new WaitForSeconds(0.5f);
-            Destroy(temp);
+            if(!RandWeather)
+            {
+                yield return new WaitForSeconds(randInterval);
+                var pos = new Vector2(UnityEngine.Random.Range(-10,10), UnityEngine.Random.Range(-10,10));
+                thunder.transform.position = pos;
+                var temp = Instantiate(thunder);
+                thunder.GetComponent<AudioSource>().Play();
+
+                yield return new WaitForSeconds(1.0f);
+                Destroy(temp.GetComponent<SpriteRenderer>());
+                yield return new WaitForSeconds(3.0f);
+                Destroy(temp);
+
+            }
+
+
+            
         }
 
 
     }
 
 
-    IEnumerator PlayThunderSound()
-    {
-        yield return new WaitForSeconds(1);
-        if(!RandWeather)
-        {
-            SoundArray[2].Play();
-        }
-    }
+    // IEnumerator PlayThunderSound()
+    // {
+    //     yield return new WaitForSeconds(1);
+    //     if(!RandWeather)
+    //     {
+    //         SoundArray[2].Play();
+    //     }
+    // }
 
     void ThunderStorm()
     {
@@ -235,28 +249,39 @@ public class WeatherController : MonoBehaviour
         RandWeather = false;
 
         var temp = Instantiate(rain);
-        StartCoroutine(FadeIn(SoundArray[1]));
 
-        while (globalLight.intensity > 0.5f)
+        if (!SoundArray[1].isPlaying)
         {
-            globalLight.intensity -= Time.deltaTime * 0.0001f;
+            StartCoroutine(FadeIn(SoundArray[1]));
         }
 
-        globalLight.color = Color.Lerp(globalLight.color, new Color(0.14f, 0.05f, 0.57f, 1.0f), 2);
+        StartCoroutine(FadeIn(SoundArray[3]));
+
+        // while (globalLight.intensity > 0.5f)
+        // {
+        //     globalLight.intensity -= 0.1f / Time.deltaTime;
+        // }
+
+        globalLight.intensity = Mathf.Lerp(globalLight.intensity, 0.5f, 5.0f);
+
+        globalLight.color = Color.Lerp(globalLight.color, new Color(0.14f, 0.05f, 0.57f, 1.0f), 1);
        
-        StartCoroutine(GetThunder(Random.Range(0.1f, 5.0f)));
+        StartCoroutine(GetThunder(UnityEngine.Random.Range(0.1f, 5.0f)));
 
 
         yield return new WaitForSeconds(15);
+        StartCoroutine(FadeOut(SoundArray[3]));
         
 
         StartCoroutine(FadeOut(SoundArray[1]));
-        while (globalLight.intensity < 1.0f)
-        {
-            globalLight.intensity += Time.deltaTime * 0.0001f;
-        }
+        // while (globalLight.intensity < 1.0f)
+        // {
+        //     globalLight.intensity += 0.1f / Time.deltaTime;
+        // }
         
-        globalLight.color = Color.Lerp(globalLight.color, startColor, 2);
+        globalLight.intensity = Mathf.Lerp(globalLight.intensity, 1.0f, 5.0f);
+
+        globalLight.color = Color.Lerp(globalLight.color, startColor, 1);
 
         Destroy(temp);
         RandWeather = true;
@@ -268,9 +293,9 @@ public class WeatherController : MonoBehaviour
     IEnumerator FadeOut(AudioSource s)
     {
         float StartVolume = s.volume;
-        while (s.volume < 0.1f)
+        while (s.volume > 0.1f)
         {
-            s.volume -= StartVolume * Time.deltaTime / 0.8f;
+            s.volume -= StartVolume * Time.deltaTime / 1.0f;
             yield return null;
         }
         s.Stop();
@@ -297,5 +322,17 @@ public class WeatherController : MonoBehaviour
     //         yield return null;
     //     }
     //     globalLight.color = end; 
-    // }
+    // } 
+
+
+    void myLerp(float duration, float val)
+    {
+
+        float temp = 0;
+        if (temp < duration)
+        {
+            globalLight.intensity = Mathf.Lerp(globalLight.intensity, val, temp / duration);
+            temp += Time.deltaTime;
+        }
+    }
 }
